@@ -1,0 +1,137 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Demo</title>
+  </head>
+  <style>
+  	.logfont{ color:#008; font-size:small;}
+  	.rocket-ship{position:absolute;left:500px;top:150px;}
+  	.gameBoard{position:absolute;left:0px;top:0px;border-style:solid;border-width:2px;background-color:#333322;height:500px;width:800px;}
+  	.logdiv{position:absolute;left:0px;top:520px;border-style:solid;border-width:2px;background-color:#ffffdd;height:250px;width:400px;}
+  </style>
+  <body>
+
+	<div id="gameBoard" class="gameBoard">&nbsp;</div>
+
+	<div id="logdiv" class="logdiv"></div>
+
+	<div id="ship1" class="rocket-ship">A</div>
+
+    <script src="./jquery-1.7.2.js"></script>
+    <script src="./jQueryRotate.2.2.js"></script>
+    <script>
+
+    	var maxX = 800;
+    	var maxY = 500;
+
+		var ship1;
+		ship1.x = 500;
+		ship1.y = 150;
+		ship1.pointingDeg = 0;
+		ship1.xv = 0;
+		ship1.yv = 0;
+		ship1.height = 0;
+		ship1.width = 0;
+		var tickCounter = 0;
+
+
+    	$(document).ready(function(){
+			init();
+		});
+
+
+	    function init()
+	    {
+		    $(document).keydown(function(event){
+				$("#logdiv").append($('<div class="logfont">' + (new Date()) + '-' + event.which + '-(keydown)</div>'));
+				shipKeyCommands(event.which);
+				cleanup();
+ 			});
+ 			$(document).keyup(function(event){
+				$("#logdiv").append($('<div class="logfont">' + (new Date()) + '-' + event.which + '-(keyup)</div>'));
+				cleanup();
+ 			});
+
+			ship1.height = $("#ship1").height();
+			ship1.width = $("#ship1").width();
+
+ 			setTimeout(tick(), 50);
+	    }
+
+		function tick()
+		{
+			moveShip();
+			slowShip();
+
+			tickCounter++;
+			setTimeout('tick()', 50);
+
+		}
+
+		function slowShip()
+		{
+
+			ship1.xv = ship1.xv * .95;
+			ship1.yv = ship1.yv * .95;
+
+		}
+
+		function moveShip()
+		{
+			ship1.x = ship1.x + ship1.xv;
+			ship1.y = ship1.y + ship1.yv;
+
+
+			if (ship1.x < 0) { ship1.x = 0; }
+			if (ship1.y < 0) { ship1.y = 0; }
+			if (ship1.x > maxX - ship1.width) { ship1.x = maxX - ship1.width };
+			if (ship1.y > maxY - ship1.height) { ship1.y = maxY - ship1.height };
+
+			$("#ship1").css('left', ship1.x  + "px");
+		    $("#ship1").css('top', ship1.y + "px");
+		}
+
+
+		function shipKeyCommands(keyPressed)
+		{
+			if (keyPressed == 39)
+			{
+				ship1.pointingDeg += 15;
+
+				$("#ship1").rotate(ship1.pointingDeg);
+			}else if (keyPressed == 37)
+			{
+				ship1.pointingDeg -= 15;
+
+				$("#ship1").rotate(ship1.pointingDeg);
+			}else if (keyPressed == 38)
+			{
+				ship1.pointingDeg = ship1.pointingDeg % 360;
+
+				// convert degrees to radians
+				anglexinradians = ship1.pointingDeg * Math.PI / 180
+
+				// solve for side a
+				ship1.xv = ship1.xv + Math.sin(anglexinradians) * 3;
+
+				// solve for side b
+			    ship1.yv = ship1.yv - Math.cos(anglexinradians) * 3;
+
+
+			}
+		}
+
+	    function cleanup()
+	    {
+
+	    	if ($("#logdiv div").size() > 10)
+	    	{
+	    		$("#logdiv div:first-child").remove();
+	    	}
+
+	    }
+
+    </script>
+  </body>
+</html>
