@@ -16,7 +16,7 @@
 
 	<div id="logdiv" class="logdiv"></div>
 
-	<div id="ship1" class="rocket-ship">A</div>
+	<div id="ship1" class="rocket-ship"><img src="./player_1.png"/></div>
 
     <script src="./jquery-1.7.2.js"></script>
     <script src="./jQueryRotate.2.2.js"></script>
@@ -33,7 +33,12 @@
 		ship1.yv = 0;
 		ship1.height = 0;
 		ship1.width = 0;
+
 		var tickCounter = 0;
+
+		var leftPressed = false;
+		var rightPressed = false;
+		var upPressed = false;
 
 
     	$(document).ready(function(){
@@ -45,22 +50,29 @@
 	    {
 		    $(document).keydown(function(event){
 				$("#logdiv").append($('<div class="logfont">' + (new Date()) + '-' + event.which + '-(keydown)</div>'));
-				shipKeyCommands(event.which);
+				shipKeyCommands(event.which, true);
 				cleanup();
  			});
  			$(document).keyup(function(event){
 				$("#logdiv").append($('<div class="logfont">' + (new Date()) + '-' + event.which + '-(keyup)</div>'));
+				shipKeyCommands(event.which, false);
 				cleanup();
  			});
 
 			ship1.height = $("#ship1").height();
 			ship1.width = $("#ship1").width();
 
+			ship1.img = $("#ship1 > img")[0];
+
+
  			setTimeout(tick(), 50);
 	    }
 
 		function tick()
 		{
+
+			shipTakeKeyCommands();
+
 			moveShip();
 			slowShip();
 
@@ -90,35 +102,66 @@
 
 			$("#ship1").css('left', ship1.x  + "px");
 		    $("#ship1").css('top', ship1.y + "px");
+
+		    $("#ship1").rotate(ship1.pointingDeg);
+
 		}
 
 
-		function shipKeyCommands(keyPressed)
+		function shipKeyCommands(key, isPressed)
 		{
-			if (keyPressed == 39)
+			if (key == 39)
 			{
-				ship1.pointingDeg += 15;
-
-				$("#ship1").rotate(ship1.pointingDeg);
-			}else if (keyPressed == 37)
+				leftPressed = isPressed;
+			}else if (key == 37)
 			{
-				ship1.pointingDeg -= 15;
-
-				$("#ship1").rotate(ship1.pointingDeg);
-			}else if (keyPressed == 38)
+				rightPressed = isPressed;
+			}else if (key == 38)
 			{
-				ship1.pointingDeg = ship1.pointingDeg % 360;
+				upPressed = isPressed;
+			}
+		}
 
-				// convert degrees to radians
-				anglexinradians = ship1.pointingDeg * Math.PI / 180
-
-				// solve for side a
-				ship1.xv = ship1.xv + Math.sin(anglexinradians) * 3;
-
-				// solve for side b
-			    ship1.yv = ship1.yv - Math.cos(anglexinradians) * 3;
+		function shipTakeKeyCommands()
+		{
 
 
+			if (leftPressed)
+			{
+				ship1.pointingDeg += 10;
+
+
+			}
+
+			if (rightPressed)
+			{
+				ship1.pointingDeg -= 10;
+
+
+			}
+
+			if (upPressed)
+			{
+				if (tickCounter % 3 == 0)
+				{
+					ship1.pointingDeg = ship1.pointingDeg % 360;
+
+					// convert degrees to radians
+					anglexinradians = ship1.pointingDeg * Math.PI / 180
+
+					// solve for side a
+					ship1.xv = ship1.xv + Math.sin(anglexinradians) * 3;
+
+					// solve for side b
+					ship1.yv = ship1.yv - Math.cos(anglexinradians) * 3;
+
+
+					ship1.img.src = "./player_1.png";
+
+				}
+			}else
+			{
+				ship1.img.src = "./player_1-blasting.png";
 			}
 		}
 
