@@ -1,0 +1,195 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Demo</title>
+  </head>
+  <style>
+  	.logfont{ color:#008; font-size:small;}
+  	.rocket-ship{position:absolute;left:500px;top:150px;}
+  	.gameBoard{position:absolute;left:0px;top:0px;border-style:solid;border-width:2px;background-color:#333322;height:500px;width:800px;}
+  	.logdiv{position:absolute;left:0px;top:520px;border-style:solid;border-width:2px;background-color:#ffffdd;height:250px;width:400px;}
+  </style>
+  <body>
+
+	<div id="gameBoard" class="gameBoard">&nbsp;</div>
+
+	<div id="logdiv" class="logdiv"></div>
+
+	<div id="ship1" class="rocket-ship"><img src="./player_1.png"/></div>
+
+    <script src="./jquery-1.7.2.js"></script>
+    <script src="./jQueryRotate.2.2.js"></script>
+    <script src="socket.io/socket.io.js"></script>
+    <script>
+
+    	var maxX = 800;
+    	var maxY = 500;
+
+		var ship1;
+		ship1.x = 500;
+		ship1.y = 150;
+		ship1.pointingDeg = 0;
+		ship1.xv = 0;
+		ship1.yv = 0;
+		ship1.height = 0;
+		ship1.width = 0;
+
+		var tickCounter = 0;
+
+		var leftPressed = false;
+		var rightPressed = false;
+		var upPressed = false;
+
+		var socket = io.connect('http://localhost:8000');
+
+
+    	$(document).ready(function(){
+			init();
+		});
+
+
+	    function init()
+	    {
+		    $(document).keydown(function(event){
+				$("#logdiv").append($('<div class="logfont">' + (new Date()) + '-' + event.which + '-(keydown)</div>'));
+
+				emitCommand('d', event.which);
+
+				shipKeyCommands(event.which, true);
+				cleanup();
+ 			});
+ 			$(document).keyup(function(event){
+				$("#logdiv").append($('<div class="logfont">' + (new Date()) + '-' + event.which + '-(keyup)</div>'));
+
+				emitCommand('u', event.which);
+
+				shipKeyCommands(event.which, false);
+				cleanup();
+ 			});
+
+			ship1.height = $("#ship1").height();
+			ship1.width = $("#ship1").width();
+
+			ship1.img = $("#ship1 > img")[0];
+
+
+ 			setTimeout(tick(), 50);
+	    }
+
+	    function emitCommand(cmdType, cmdVal)
+	    {
+
+			socket.emit('userEvent', { cmdVal: cmdVal, cmdType: cmdType });
+	    }
+
+		function tick()
+		{
+
+			shipTakeKeyCommands();
+
+			moveShip();
+			slowShip();
+
+			tickCounter++;
+			setTimeout('tick()', 50);
+
+		}
+
+		function slowShip()
+		{
+
+			ship1.xv = ship1.xv * .95;
+			ship1.yv = ship1.yv * .95;
+
+		}
+
+		function moveShip()
+		{
+			ship1.x = ship1.x + ship1.xv;
+			ship1.y = ship1.y + ship1.yv;
+
+
+			if (ship1.x < 0) { ship1.x = 0; }
+			if (ship1.y < 0) { ship1.y = 0; }
+			if (ship1.x > maxX - ship1.width) { ship1.x = maxX - ship1.width };
+			if (ship1.y > maxY - ship1.height) { ship1.y = maxY - ship1.height };
+
+			$("#ship1").css('left', ship1.x  + "px");
+		    $("#ship1").css('top', ship1.y + "px");
+
+		    $("#ship1").rotate(ship1.pointingDeg);
+
+		}
+
+
+		function shipKeyCommands(key, isPressed)
+		{
+			if (key == 39)
+			{
+				leftPressed = isPressed;
+			}else if (key == 37)
+			{
+				rightPressed = isPressed;
+			}else if (key == 38)
+			{
+				upPressed = isPressed;
+			}
+		}
+
+		function shipTakeKeyCommands()
+		{
+
+
+			if (leftPressed)
+			{
+				ship1.pointingDeg += 10;
+
+
+			}
+
+			if (rightPressed)
+			{
+				ship1.pointingDeg -= 10;
+
+
+			}
+
+			if (upPressed)
+			{
+				if (tickCounter % 3 == 0)
+				{
+					ship1.pointingDeg = ship1.pointingDeg % 360;
+
+					// convert degrees to radians
+					anglexinradians = ship1.pointingDeg * Math.PI / 180
+
+					// solve for side a
+					ship1.xv = ship1.xv + Math.sin(anglexinradians) * 3;
+
+					// solve for side b
+					ship1.yv = ship1.yv - Math.cos(anglexinradians) * 3;
+
+
+					ship1.img.src = "./player_1.png";
+
+				}
+			}else
+			{
+				ship1.img.src = "./player_1-blasting.png";
+			}
+		}
+
+	    function cleanup()
+	    {
+
+	    	if ($("#logdiv div").size() > 10)
+	    	{
+	    		$("#logdiv div:first-child").remove();
+	    	}
+
+	    }
+
+    </script>
+  </body>
+</html>
