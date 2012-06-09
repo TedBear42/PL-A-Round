@@ -54,7 +54,7 @@ io.sockets.on('connection', function (socket) {
 setInterval(function() 
 {
      
-   var eventResponse = '';
+   var eventResponse = [];
      
    //switch the references
    
@@ -64,17 +64,20 @@ setInterval(function()
    //create the response
    for (var i = 0; i < tempEvents.length; i++)
    {
-      eventResponse = eventResponse + tempEvents[i].thisUserId + ':' + tempEvents[i].cmdType + ':' + tempEvents[i].cmdVal + ';';
+      eventResponse.push({userId: tempEvents[i].thisUserId ,cmdType: tempEvents[i].cmdType ,cmdVal: tempEvents[i].cmdVal  });
    }
         
-   //send the response to all sockets
-   for (var i = 0; i < sockets.length; i++)
+   if (tempEvents.length > 0)
    {
-      sockets[i].emit('events', { events: eventResponse });      
+      //send the response to all sockets
+      for (var i = 0; i < sockets.length; i++)
+      {
+         sockets[i].emit('events', { events:  eventResponse });      
+      }
    }
      
-   console.log('eventResponse:' + eventResponse);
-  }, 2000);
+   //console.log('eventResponse:' + eventResponse);
+  }, 100);
   
 
 //

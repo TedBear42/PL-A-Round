@@ -52,20 +52,20 @@
 	    function init()
 	    {
 		    $(document).keydown(function(event){
-				$("#logdiv").append($('<div class="logfont">' + (new Date()) + '-' + event.which + '-(keydown)</div>'));
+				//$("#logdiv").append($('<div class="logfont">' + (new Date()) + '-' + event.which + '-(keydown)</div>'));
 
 				emitCommand('d', event.which);
 
-				shipKeyCommands(event.which, true);
-				cleanup();
+				//shipKeyCommands(event.which, true);
+				//cleanup();
  			});
  			$(document).keyup(function(event){
-				$("#logdiv").append($('<div class="logfont">' + (new Date()) + '-' + event.which + '-(keyup)</div>'));
+				//$("#logdiv").append($('<div class="logfont">' + (new Date()) + '-' + event.which + '-(keyup)</div>'));
 
 				emitCommand('u', event.which);
 
-				shipKeyCommands(event.which, false);
-				cleanup();
+				//shipKeyCommands(event.which, false);
+				//cleanup();
  			});
 
 			ship1.height = $("#ship1").height();
@@ -73,14 +73,34 @@
 
 			ship1.img = $("#ship1 > img")[0];
 
+			socket.on('events', function (dataArray)
+			{
+
+				$("#logdiv").append($('<div class="logfont">' + (new Date()) + '-' + dataArray.events.length + '</div>'));
+			    for (var i = 0; i < dataArray.events.length; i++)
+			    {
+			        var data = dataArray.events[i];
+			    	$("#logdiv").append($('<div class="logfont">' + (new Date()) + '-' + data.userId + ':' + data.cmdVal + '-(' + data.cmdType +')</div>'));
+					shipKeyCommands(data.cmdVal, (data.cmdType=='d'));
+					cleanup();
+				}
+			});
+
 
  			setTimeout(tick(), 50);
 	    }
 
+
+        var lastCmd = { cmdVal: 0, cmdType: 'x' };
 	    function emitCommand(cmdType, cmdVal)
 	    {
 
-			socket.emit('userEvent', { cmdVal: cmdVal, cmdType: cmdType });
+			var thisCmd = { cmdVal: cmdVal, cmdType: cmdType };
+			if (lastCmd.cmdVal != thisCmd.cmdVal || lastCmd.cmdType != thisCmd.cmdType)
+			{
+				socket.emit('userEvent', thisCmd);
+			}
+			lastCmd = thisCmd;
 	    }
 
 		function tick()
@@ -183,7 +203,7 @@
 	    function cleanup()
 	    {
 
-	    	if ($("#logdiv div").size() > 10)
+	    	while ($("#logdiv div").size() > 10)
 	    	{
 	    		$("#logdiv div:first-child").remove();
 	    	}
