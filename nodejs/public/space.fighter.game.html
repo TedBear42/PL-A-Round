@@ -40,6 +40,8 @@
 		var leftPressed = false;
 		var rightPressed = false;
 		var upPressed = false;
+		var thisUserId = -1;
+		var users = [];
 
 		var socket = io.connect('http://localhost:8000');
 
@@ -81,10 +83,15 @@
 			    {
 			        var data = dataArray.events[i];
 			    	$("#logdiv").append($('<div class="logfont">' + (new Date()) + '-' + data.userId + ':' + data.cmdVal + '-(' + data.cmdType +')</div>'));
-					shipKeyCommands(data.cmdVal, (data.cmdType=='d'));
+					shipKeyCommands(data.userId, data.cmdVal, (data.cmdType=='d'));
 					cleanup();
 				}
 			});
+
+			socket.on('userId', function (data)
+			{
+				thisUserId = data.thisUserId;
+			}
 
 
  			setTimeout(tick(), 50);
@@ -143,7 +150,7 @@
 		}
 
 
-		function shipKeyCommands(key, isPressed)
+		function shipKeyCommands(userId, key, isPressed)
 		{
 			if (key == 39)
 			{
