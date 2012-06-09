@@ -95,7 +95,7 @@ setInterval(function()
    }
      
    //console.log('eventResponse:' + eventResponse);
-  }, 190);
+  }, 200);
   
 
 //

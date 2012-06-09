@@ -28,6 +28,7 @@
     	var maxX = 800;
     	var maxY = 500;
     	var holdTicks = false;
+    	var ticksLeft = 0;
 
 
 
@@ -53,21 +54,17 @@
 			socket.on('events', function (dataArray)
 			{
 
-				$("#logdiv").append($('<div class="logfont">' + (new Date()) + '-' + dataArray.events.length + '</div>'));
+				$("#logdiv").append($('<div class="logfont">' + (new Date()) + '-EventCount:' + dataArray.events.length + '</div>'));
 			    for (var i = 0; i < dataArray.events.length; i++)
 			    {
 			        var data = dataArray.events[i];
-			    	$("#logdiv").append($('<div class="logfont">' + (new Date()) + '-' + data.userId + ':' + data.cmdVal + '-(' + data.cmdType +')</div>'));
+			    	//$("#logdiv").append($('<div class="logfont">' + (new Date()) + '-' + data.userId + ':' + data.cmdVal + '-(' + data.cmdType +')</div>'));
 					shipKeyCommands(data.userId, data.cmdVal, (data.cmdType=='d'));
-					cleanup();
 				}
+				cleanup();
 
 				//run too ticks before next events event
-				setTimeout(tick(), 0);
-				setTimeout(tick(), 50);
-				setTimeout(tick(), 100);
-				setTimeout(tick(), 150);
-
+				ticksLeft += 3;
 			});
 
 			//init socket listeners for your ship ID
@@ -97,6 +94,9 @@
 
 				$("#logdiv").append($('<div class="logfont">' + (new Date()) + '-existingShip' + ship.userId + '</div>'));
 			});
+
+
+			setTimeout('tick()', 50);
 	    }
 
 
@@ -115,12 +115,17 @@
 
 		function tick()
 		{
-			shipTakeKeyCommands();
 
-			moveShip();
-			slowShip();
+			if (ticksLeft > 0)
+			{
+				ticksLeft--;
+				shipTakeKeyCommands();
 
+				moveShip();
+				slowShip();
+			}
 			tickCounter++;
+			setTimeout('tick()', 50);
 		}
 
 		function reportShipStatus()
