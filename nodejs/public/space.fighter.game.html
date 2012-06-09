@@ -6,7 +6,7 @@
   </head>
   <style>
   	.logfont{ color:#008; font-size:small;}
-  	.rocket-ship{position:absolute;left:500px;top:150px;}
+  	.rocket-ship{position:absolute;left:-50px;top:-50px;}
   	.gameBoard{position:absolute;left:0px;top:0px;border-style:solid;border-width:2px;background-color:#333322;height:500px;width:800px;}
   	.logdiv{position:absolute;left:0px;top:520px;border-style:solid;border-width:2px;background-color:#ffffdd;height:250px;width:400px;}
   </style>
@@ -16,7 +16,9 @@
 
 	<div id="logdiv" class="logdiv"></div>
 
-	<div id="ship1" class="rocket-ship"><img src="./player_1.png"/></div>
+
+
+
 
     <script src="./jquery-1.7.2.js"></script>
     <script src="./jQueryRotate.2.2.js"></script>
@@ -25,23 +27,9 @@
 
     	var maxX = 800;
     	var maxY = 500;
+    	var holdTicks = false;
 
-		var ship1;
-		ship1.x = 500;
-		ship1.y = 150;
-		ship1.pointingDeg = 0;
-		ship1.xv = 0;
-		ship1.yv = 0;
-		ship1.height = 0;
-		ship1.width = 0;
 
-		var tickCounter = 0;
-
-		var leftPressed = false;
-		var rightPressed = false;
-		var upPressed = false;
-		var thisUserId = -1;
-		var users = [];
 
 		var socket = io.connect('http://localhost:8000');
 
@@ -53,28 +41,15 @@
 
 	    function init()
 	    {
+	    	//init key listeners
 		    $(document).keydown(function(event){
-				//$("#logdiv").append($('<div class="logfont">' + (new Date()) + '-' + event.which + '-(keydown)</div>'));
-
 				emitCommand('d', event.which);
-
-				//shipKeyCommands(event.which, true);
-				//cleanup();
  			});
  			$(document).keyup(function(event){
-				//$("#logdiv").append($('<div class="logfont">' + (new Date()) + '-' + event.which + '-(keyup)</div>'));
-
 				emitCommand('u', event.which);
-
-				//shipKeyCommands(event.which, false);
-				//cleanup();
  			});
 
-			ship1.height = $("#ship1").height();
-			ship1.width = $("#ship1").width();
-
-			ship1.img = $("#ship1 > img")[0];
-
+			//init socket listeners for events
 			socket.on('events', function (dataArray)
 			{
 
@@ -86,18 +61,46 @@
 					shipKeyCommands(data.userId, data.cmdVal, (data.cmdType=='d'));
 					cleanup();
 				}
+
+				//run too ticks before next events event
+				setTimeout(tick(), 0);
+				setTimeout(tick(), 50);
+				setTimeout(tick(), 100);
+				setTimeout(tick(), 150);
+
 			});
 
+			//init socket listeners for your ship ID
 			socket.on('userId', function (data)
 			{
-				thisUserId = data.thisUserId;
-			}
+				thisUserId = data.userId;
 
+				newShip(thisUserId, data.x, data.y, data.imgIndex);
 
- 			setTimeout(tick(), 50);
+				$("#logdiv").append($('<div class="logfont">' + (new Date()) + '-UserId' + data.thisUserId + '</div>'));
+			});
+
+			//init socket listeners for other ship
+			socket.on('newShip', function (data)
+			{
+				newShip(data.userId, data.x, data.y, data.imgIndex);
+
+				$("#logdiv").append($('<div class="logfont">' + (new Date()) + '-newShip' + data.userId + '</div>'));
+
+				reportShipStatus();
+			});
+
+			//init socket listeners for other ship
+			socket.on('existingShip', function (ship)
+			{
+				newExistingShip(ship);
+
+				$("#logdiv").append($('<div class="logfont">' + (new Date()) + '-existingShip' + ship.userId + '</div>'));
+			});
 	    }
 
 
+		//This will send commands back to the server
         var lastCmd = { cmdVal: 0, cmdType: 'x' };
 	    function emitCommand(cmdType, cmdVal)
 	    {
@@ -112,100 +115,21 @@
 
 		function tick()
 		{
-
 			shipTakeKeyCommands();
 
 			moveShip();
 			slowShip();
 
 			tickCounter++;
-			setTimeout('tick()', 50);
-
 		}
 
-		function slowShip()
+		function reportShipStatus()
 		{
+		    var ship = ships[thisUserId];
 
-			ship1.xv = ship1.xv * .95;
-			ship1.yv = ship1.yv * .95;
-
+			socket.emit('existingShip', {shipId:ship.shipId, pointingDeg:ship.pointingDeg, imgIndex:ship.imgIndex, leftPressed:ship.leftPressed, rightPressed:ship.rightPressed, xPos:ship.xPos, yPos:ship.yPos, xv:ship.xv, yv:ship.yv, upPressed:ship.upPressed});
 		}
 
-		function moveShip()
-		{
-			ship1.x = ship1.x + ship1.xv;
-			ship1.y = ship1.y + ship1.yv;
-
-
-			if (ship1.x < 0) { ship1.x = 0; }
-			if (ship1.y < 0) { ship1.y = 0; }
-			if (ship1.x > maxX - ship1.width) { ship1.x = maxX - ship1.width };
-			if (ship1.y > maxY - ship1.height) { ship1.y = maxY - ship1.height };
-
-			$("#ship1").css('left', ship1.x  + "px");
-		    $("#ship1").css('top', ship1.y + "px");
-
-		    $("#ship1").rotate(ship1.pointingDeg);
-
-		}
-
-
-		function shipKeyCommands(userId, key, isPressed)
-		{
-			if (key == 39)
-			{
-				leftPressed = isPressed;
-			}else if (key == 37)
-			{
-				rightPressed = isPressed;
-			}else if (key == 38)
-			{
-				upPressed = isPressed;
-			}
-		}
-
-		function shipTakeKeyCommands()
-		{
-
-
-			if (leftPressed)
-			{
-				ship1.pointingDeg += 10;
-
-
-			}
-
-			if (rightPressed)
-			{
-				ship1.pointingDeg -= 10;
-
-
-			}
-
-			if (upPressed)
-			{
-				if (tickCounter % 3 == 0)
-				{
-					ship1.pointingDeg = ship1.pointingDeg % 360;
-
-					// convert degrees to radians
-					anglexinradians = ship1.pointingDeg * Math.PI / 180
-
-					// solve for side a
-					ship1.xv = ship1.xv + Math.sin(anglexinradians) * 3;
-
-					// solve for side b
-					ship1.yv = ship1.yv - Math.cos(anglexinradians) * 3;
-
-
-					ship1.img.src = "./player_1.png";
-
-				}
-			}else
-			{
-				ship1.img.src = "./player_1-blasting.png";
-			}
-		}
 
 	    function cleanup()
 	    {
@@ -216,6 +140,151 @@
 	    	}
 
 	    }
+
+
+	    //ship management
+	    var tickCounter = 0;
+	    var ships = new Object();
+	    var shipIds = [];
+
+		function newExistingShip (ship)
+		{
+			if (shipIds.indexOf(ship.shipId) == -1)
+	        {
+				$('body').append($("<div id=\"ship" + ship.shipId + "\" class=\"rocket-ship\"><img src=\"./player_" + ship.imgIndex + ".png\"/></div>"));
+
+				ship.height = $("#ship" + ship.shipId).height();
+				ship.width = $("#ship" + ship.shipId).width();
+				ship.img = $("#ship" + ship.shipId + " > img")[0];
+
+				ship.type = "existing";
+				ships[ship.shipId] = ship;
+				shipIds.push(ship.shipId);
+	        }
+		}
+
+		//Create new ship
+	    function newShip(shipId, xPos, yPos, imgIndex)
+	    {
+	        if (shipIds.indexOf(shipId) == -1)
+	        {
+				var ship = new Object();
+				ship.xPos = xPos;
+				ship.yPos = yPos;
+				ship.pointingDeg = 0;
+				ship.xv = 0;
+				ship.yv = 0;
+				ship.height = 0;
+				ship.width = 0;
+				ship.leftPressed = false;
+				ship.rightPressed = false;
+				ship.upPressed = false;
+				ship.shipId = shipId;
+				ship.imgIndex = imgIndex;
+
+				ship.type = "new";
+
+				ships[shipId] = ship;
+				shipIds.push(shipId);
+
+				$('body').append($("<div id=\"ship" + shipId + "\" class=\"rocket-ship\"><img src=\"./player_" + ship.imgIndex + ".png\"/></div>"));
+
+				ship.height = $("#ship" + shipId).height();
+				ship.width = $("#ship" + shipId).width();
+				ship.img = $("#ship" + shipId + " > img")[0];
+			}
+	    }
+
+
+		function shipKeyCommands(userId, key, isPressed)
+		{
+			var ship = ships[userId];
+			if (key == 39)
+			{
+				ship.leftPressed = isPressed;
+			}else if (key == 37)
+			{
+				ship.rightPressed = isPressed;
+			}else if (key == 38)
+			{
+				ship.upPressed = isPressed;
+			}
+		}
+
+		function shipTakeKeyCommands()
+		{
+
+			for (var i = 0; i < shipIds.length; i++)
+			{
+				var ship = ships[shipIds[i]];
+				if (ship.leftPressed)
+				{
+					ship.pointingDeg += 10;
+				}
+
+				if (ship.rightPressed)
+				{
+					ship.pointingDeg -= 10;
+				}
+
+				if (ship.upPressed)
+				{
+					if (tickCounter % 3 == 0)
+					{
+						ship.pointingDeg = ship.pointingDeg % 360;
+
+						// convert degrees to radians
+						anglexinradians = ship.pointingDeg * Math.PI / 180
+
+						// solve for side a
+						ship.xv = ship.xv + Math.sin(anglexinradians) * 3;
+
+						// solve for side b
+						ship.yv = ship.yv - Math.cos(anglexinradians) * 3;
+
+
+						ship.img.src = "./player_" + ship.imgIndex + ".png";
+
+					}
+				}else
+				{
+					ship.img.src = "./player_" + ship.imgIndex + "-blasting.png";
+				}
+			}
+		}
+
+		function slowShip()
+		{
+			for (var i = 0; i < shipIds.length; i++)
+			{
+				var ship = ships[shipIds[i]];
+				ship.xv = ship.xv * .95;
+				ship.yv = ship.yv * .95;
+			}
+		}
+
+		function moveShip()
+		{
+			for (var i = 0; i < shipIds.length; i++)
+			{
+				var ship = ships[shipIds[i]];
+				ship.xPos = ship.xPos + ship.xv;
+				ship.yPos = ship.yPos + ship.yv;
+
+
+				if (ship.xPos < 0) { ship.xPos = 0; }
+				if (ship.yPos < 0) { ship.yPos = 0; }
+				if (ship.xPos > maxX - ship.width) { ship.xPos = maxX - ship.width };
+				if (ship.yPos > maxY - ship.height) { ship.yPos = maxY - ship.height };
+
+				var shipElement = $("#ship" + ship.shipId);
+
+				shipElement.css('left', ship.xPos  + "px");
+				shipElement.css('top', ship.yPos + "px");
+
+				shipElement.rotate(ship.pointingDeg);
+			}
+		}
 
     </script>
   </body>
