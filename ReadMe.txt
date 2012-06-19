@@ -18,6 +18,7 @@ How to run:
 
 
 TODO:
-1. Add ships when new player comes
-2. different ships use different images
-3. kill ships when players leave
+1. Add headless rules engine to the server
+2. kill ships when players leave
+3. Collect render speeds and server send speeds
+
